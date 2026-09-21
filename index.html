@@ -1,0 +1,1017 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>Midterms Quiz Generator</title>
+<style>
+:root {
+  --bg:#F2F0EB;
+  --surface:#FDFCFA;
+  --raised:#FFFFFF;
+  --border:#DDD9D0;
+  --border2:#CCCAC0;
+  --ink:#18191F;
+  --ink2:#52555E;
+  --ink3:#9296A0;
+
+  /* Subject accent colors */
+  --ds:#1A5276;   --ds-lt:#E8F0F8;   --ds-mid:#2E86C1;
+  --pm:#145A32;   --pm-lt:#E8F5EE;   --pm-mid:#1E8449;
+  --im:#6C3483;   --im-lt:#F3EAF8;   --im-mid:#8E44AD;
+
+  --good:#1E7E5A; --good-lt:#E6F4EE;
+  --bad:#C0392B;  --bad-lt:#FCECEA;
+  --warn:#A0522D; --warn-lt:#FDF0E6;
+
+  --r:3px;
+  font-size:15px;
+}
+
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
+html{scroll-behavior:smooth;}
+body{background:var(--bg);color:var(--ink);font-family:Inter,'Segoe UI',system-ui,sans-serif;line-height:1.6;min-height:100vh;display:flex;flex-direction:column;}
+
+/* === TOPBAR === */
+.topbar{
+  display:flex;align-items:center;gap:14px;
+  background:var(--ink);color:#fff;
+  padding:0 24px;height:52px;
+  position:sticky;top:0;z-index:200;
+  flex-shrink:0;
+}
+.topbar-brand{font-size:14.5px;font-weight:700;letter-spacing:-.2px;}
+.topbar-sub{font-size:12px;color:#8A9BB5;margin-left:2px;}
+.topbar-score{
+  margin-left:auto;display:flex;gap:18px;align-items:center;
+  font-size:12.5px;
+}
+.score-chip{
+  background:rgba(255,255,255,.1);border-radius:20px;
+  padding:3px 12px;display:flex;gap:8px;
+}
+.sc-c{color:#7DEFA0;font-weight:700;}
+.sc-w{color:#FF8077;font-weight:700;}
+.sc-s{color:#FFD166;font-weight:700;}
+
+/* === LAYOUT === */
+.shell{display:flex;flex:1;min-height:0;}
+
+/* === SIDEBAR === */
+.sidebar{
+  width:270px;flex-shrink:0;
+  background:var(--surface);
+  border-right:1px solid var(--border);
+  overflow-y:auto;
+  position:sticky;top:52px;
+  height:calc(100vh - 52px);
+  padding-bottom:40px;
+}
+.sb-subject{
+  border-bottom:1px solid var(--border);
+}
+.sb-subject-hd{
+  display:flex;align-items:center;gap:10px;
+  padding:13px 18px 12px;
+  cursor:pointer;
+  font-size:12.5px;font-weight:700;
+  letter-spacing:.2px;
+  position:sticky;top:0;
+  z-index:10;
+  border-left:3px solid transparent;
+}
+.sb-subject-hd:hover{opacity:.85;}
+.sb-subject-hd.ds{background:var(--ds-lt);color:var(--ds);border-left-color:var(--ds);}
+.sb-subject-hd.pm{background:var(--pm-lt);color:var(--pm);border-left-color:var(--pm);}
+.sb-subject-hd.im{background:var(--im-lt);color:var(--im);border-left-color:var(--im);}
+.sb-dot{width:8px;height:8px;border-radius:50%;flex-shrink:0;}
+.sb-dot.ds{background:var(--ds-mid);}
+.sb-dot.pm{background:var(--pm-mid);}
+.sb-dot.im{background:var(--im-mid);}
+.sb-chevron{margin-left:auto;font-size:10px;transition:transform .2s;}
+.sb-subject.open .sb-chevron{transform:rotate(90deg);}
+.sb-lessons{display:none;}
+.sb-subject.open .sb-lessons{display:block;}
+.sb-lesson{
+  display:flex;align-items:center;gap:10px;
+  padding:8px 18px 8px 30px;
+  cursor:pointer;
+  font-size:13px;color:var(--ink2);
+  border-left:3px solid transparent;
+  transition:background .1s;
+}
+.sb-lesson:hover{background:var(--bg);color:var(--ink);}
+.sb-lesson.active{color:var(--ink);font-weight:600;background:var(--bg);}
+.sb-lesson.active.ds{border-left-color:var(--ds);}
+.sb-lesson.active.pm{border-left-color:var(--pm);}
+.sb-lesson.active.im{border-left-color:var(--im);}
+.sb-count{margin-left:auto;font-size:11px;color:var(--ink3);background:var(--bg);border-radius:10px;padding:1px 7px;flex-shrink:0;}
+.sb-all{
+  display:flex;align-items:center;gap:10px;
+  padding:14px 18px;cursor:pointer;
+  background:var(--ink);color:#fff;
+  font-size:13px;font-weight:600;
+}
+.sb-all:hover{background:#2a2d38;}
+
+/* === MAIN === */
+.main{flex:1;min-width:0;padding:28px 36px 60px;max-width:900px;}
+
+/* === HOME === */
+.home-header{
+  background:var(--ink);color:#fff;
+  border-radius:var(--r);padding:32px;
+  margin-bottom:24px;
+}
+.home-header h1{font-size:22px;font-weight:800;margin-bottom:8px;line-height:1.3;}
+.home-header p{color:#8A9BB5;font-size:14px;max-width:58ch;line-height:1.65;}
+.home-stats{display:flex;gap:16px;margin-top:20px;flex-wrap:wrap;}
+.hstat{background:rgba(255,255,255,.08);border-radius:var(--r);padding:12px 18px;min-width:100px;}
+.hstat .hn{font-size:26px;font-weight:800;color:#7EB3FF;}
+.hstat .hl{font-size:11.5px;color:#8A9BB5;margin-top:2px;}
+
+.subject-section{margin-bottom:28px;}
+.subject-section-hd{
+  display:flex;align-items:center;gap:10px;
+  margin-bottom:12px;padding-bottom:10px;
+  border-bottom:2px solid;
+  font-size:13px;font-weight:700;
+}
+.subject-section-hd.ds{color:var(--ds);border-color:var(--ds);}
+.subject-section-hd.pm{color:var(--pm);border-color:var(--pm);}
+.subject-section-hd.im{color:var(--im);border-color:var(--im);}
+.subject-pill{
+  font-size:10.5px;font-weight:700;padding:2px 10px;
+  border-radius:20px;
+}
+.subject-pill.ds{background:var(--ds-lt);color:var(--ds);}
+.subject-pill.pm{background:var(--pm-lt);color:var(--pm);}
+.subject-pill.im{background:var(--im-lt);color:var(--im);}
+
+.lesson-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:10px;}
+.lcard{
+  background:var(--surface);border:1px solid var(--border);
+  border-radius:var(--r);padding:14px 16px;
+  cursor:pointer;transition:border-color .15s,box-shadow .15s;
+}
+.lcard:hover{border-color:var(--border2);box-shadow:0 2px 10px rgba(0,0,0,.07);}
+.lcard .lc-week{font-size:11px;color:var(--ink3);margin-bottom:4px;}
+.lcard h3{font-size:13.5px;font-weight:600;color:var(--ink);line-height:1.35;margin-bottom:6px;}
+.lcard .lc-q{font-size:12px;color:var(--ink3);}
+.lcard .lc-bar{height:2px;background:var(--border);margin-top:10px;border-radius:2px;overflow:hidden;}
+.lcard .lc-bar-fill{height:100%;width:0%;transition:width .4s;}
+.lcard.ds .lc-bar-fill{background:var(--ds-mid);}
+.lcard.pm .lc-bar-fill{background:var(--pm-mid);}
+.lcard.im .lc-bar-fill{background:var(--im-mid);}
+
+/* === QUIZ HEADER === */
+.qz-header{
+  display:flex;align-items:flex-start;gap:14px;
+  padding-bottom:18px;border-bottom:1px solid var(--border);
+  margin-bottom:20px;
+}
+.qz-header-text h2{font-size:18px;font-weight:700;}
+.qz-header-text p{font-size:13px;color:var(--ink2);margin-top:3px;}
+.qz-tag{
+  font-size:11px;font-weight:700;padding:3px 10px;
+  border-radius:20px;white-space:nowrap;
+  margin-top:2px;flex-shrink:0;
+}
+.qz-tag.ds{background:var(--ds-lt);color:var(--ds);}
+.qz-tag.pm{background:var(--pm-lt);color:var(--pm);}
+.qz-tag.im{background:var(--im-lt);color:var(--im);}
+.qz-tag.mixed{background:#e8e4f8;color:#4A3A8A;}
+
+.prog-wrap{margin-bottom:22px;}
+.prog-info{display:flex;justify-content:space-between;font-size:12px;color:var(--ink2);margin-bottom:5px;}
+.prog-track{height:4px;background:var(--border);border-radius:3px;overflow:hidden;}
+.prog-fill{height:100%;border-radius:3px;transition:width .3s;}
+.prog-fill.ds{background:var(--ds-mid);}
+.prog-fill.pm{background:var(--pm-mid);}
+.prog-fill.im{background:var(--im-mid);}
+.prog-fill.mixed{background:#7B68EE;}
+
+/* === QUESTION CARD === */
+.qcard{
+  background:var(--surface);border:1px solid var(--border);
+  border-radius:var(--r);padding:22px 24px;
+  margin-bottom:14px;
+}
+.qcard-meta{display:flex;align-items:center;gap:8px;margin-bottom:10px;flex-wrap:wrap;}
+.qtype-badge{
+  font-size:10.5px;font-weight:700;color:var(--ink3);
+  background:var(--bg);border:1px solid var(--border);
+  padding:2px 8px;border-radius:10px;
+}
+.qnum{font-size:11.5px;color:var(--ink3);}
+.qlesson{font-size:11px;color:var(--ink3);}
+.qtext{font-size:15px;font-weight:600;color:var(--ink);line-height:1.5;margin-bottom:16px;max-width:65ch;}
+
+/* MC options */
+.opts{list-style:none;display:flex;flex-direction:column;gap:8px;}
+.opt{
+  display:flex;align-items:flex-start;gap:11px;
+  width:100%;text-align:left;
+  background:var(--bg);border:1.5px solid var(--border);
+  border-radius:var(--r);padding:10px 14px;
+  cursor:pointer;font-size:14px;color:var(--ink);
+  transition:border-color .1s,background .1s;
+  font-family:inherit;line-height:1.45;
+}
+.opt-circle{
+  width:16px;height:16px;border-radius:50%;
+  border:1.5px solid var(--border2);background:#fff;
+  flex-shrink:0;margin-top:1px;transition:all .1s;
+}
+.opt:hover:not(:disabled){border-color:var(--border2);}
+.opt.sel{border-color:#6060C0;background:#F0EEFF;}
+.opt.sel .opt-circle{background:#6060C0;border-color:#6060C0;}
+.opt.correct{border-color:var(--good);background:var(--good-lt);color:var(--good);}
+.opt.correct .opt-circle{background:var(--good);border-color:var(--good);}
+.opt.wrong{border-color:var(--bad);background:var(--bad-lt);color:var(--bad);}
+.opt.wrong .opt-circle{background:var(--bad);border-color:var(--bad);}
+.opt:disabled{cursor:default;}
+
+/* ID input */
+.id-wrap{display:flex;flex-direction:column;gap:6px;}
+.id-label{font-size:12.5px;color:var(--ink2);}
+.id-input{
+  border:1.5px solid var(--border);background:var(--bg);
+  border-radius:var(--r);padding:10px 13px;
+  font-size:14px;color:var(--ink);font-family:inherit;
+  max-width:400px;width:100%;
+  transition:border-color .12s;
+}
+.id-input:focus{outline:none;border-color:#6060C0;background:#F8F7FF;}
+.id-input.correct{border-color:var(--good);background:var(--good-lt);color:var(--good);}
+.id-input.wrong{border-color:var(--bad);background:var(--bad-lt);color:var(--bad);}
+.id-input:disabled{cursor:default;}
+.id-hint{font-size:11.5px;color:var(--ink3);font-style:italic;}
+
+/* Feedback */
+.feedback{
+  margin-top:11px;padding:9px 13px;
+  border-radius:var(--r);font-size:13px;line-height:1.5;
+  display:none;border-left:3px solid;
+}
+.feedback.show{display:block;}
+.feedback.correct{background:var(--good-lt);color:var(--good);border-left-color:var(--good);}
+.feedback.wrong{background:var(--bad-lt);color:var(--bad);border-left-color:var(--bad);}
+
+/* Buttons */
+.btn{
+  display:inline-flex;align-items:center;gap:7px;
+  padding:9px 20px;border-radius:var(--r);
+  font-size:13.5px;font-weight:600;cursor:pointer;
+  border:none;font-family:inherit;
+  transition:opacity .1s,transform .1s;
+}
+.btn:active{transform:scale(.98);}
+.btn-pri{background:var(--ink);color:#fff;}
+.btn-pri:hover{opacity:.85;}
+.btn-sec{background:var(--surface);color:var(--ink);border:1px solid var(--border2);}
+.btn-sec:hover{background:var(--bg);}
+.btn-retry{background:#4A3A8A;color:#fff;}
+.btn-retry:hover{opacity:.85;}
+.btn:disabled{opacity:.4;cursor:not-allowed;transform:none;}
+
+.qz-actions{display:flex;gap:10px;margin-top:24px;flex-wrap:wrap;}
+
+/* Results */
+.res-card{
+  background:var(--surface);border:1px solid var(--border);
+  border-radius:var(--r);padding:28px;margin-bottom:20px;
+  text-align:center;
+}
+.res-ring{
+  width:100px;height:100px;border-radius:50%;
+  border:5px solid var(--border);
+  display:flex;flex-direction:column;align-items:center;justify-content:center;
+  margin:0 auto 18px;font-size:27px;font-weight:800;
+}
+.res-ring.great{border-color:var(--good);color:var(--good);}
+.res-ring.ok{border-color:#B08A2E;color:#B08A2E;}
+.res-ring.low{border-color:var(--bad);color:var(--bad);}
+.res-ring .ring-sub{font-size:11px;font-weight:500;}
+.res-card h2{font-size:18px;font-weight:700;margin-bottom:6px;}
+.res-card p{color:var(--ink2);font-size:13.5px;}
+.res-stats{display:flex;gap:18px;justify-content:center;margin-top:18px;flex-wrap:wrap;}
+.rstat .rn{font-size:22px;font-weight:800;}
+.rstat .rl{font-size:11px;color:var(--ink3);margin-top:1px;text-align:center;}
+.rn.g{color:var(--good);}
+.rn.r{color:var(--bad);}
+.rn.b{color:#4A3A8A;}
+
+.retry-banner{
+  background:var(--warn-lt);border:1px solid #E8B87A;
+  border-radius:var(--r);padding:12px 16px;margin-bottom:18px;
+  font-size:13.5px;color:var(--warn);
+  display:flex;align-items:center;gap:10px;
+}
+
+.review-section{margin-top:24px;}
+.review-hd{font-size:13px;font-weight:700;color:var(--ink2);padding-bottom:8px;border-bottom:1px solid var(--border);margin-bottom:12px;}
+.review-item{
+  background:var(--surface);border:1px solid var(--border);
+  border-radius:var(--r);padding:13px 16px;margin-bottom:9px;
+  font-size:13px;
+}
+.ri-q{font-weight:600;margin-bottom:5px;}
+.ri-y{color:var(--bad);margin-bottom:3px;}
+.ri-c{color:var(--good);}
+
+@media(max-width:740px){
+  .shell{flex-direction:column;}
+  .sidebar{width:100%;height:auto;position:static;}
+  .main{padding:18px 16px 48px;max-width:100%;}
+  .topbar{padding:0 14px;}
+  .home-header{padding:22px 18px;}
+}
+@media(prefers-reduced-motion:reduce){*{transition:none!important;}}
+</style>
+</head>
+<body>
+
+<header class="topbar">
+  <div>
+    <span class="topbar-brand">Midterms Quiz Generator</span>
+    <span class="topbar-sub">QCU · IT</span>
+  </div>
+  <div class="topbar-score score-chip">
+    ✓ <span class="sc-c" id="gC">0</span>
+    &nbsp;✗ <span class="sc-w" id="gW">0</span>
+    &nbsp;🔥 <span class="sc-s" id="gS">0</span>
+  </div>
+</header>
+
+<div class="shell">
+  <nav class="sidebar" id="sidebar">
+    <div class="sb-all" onclick="startQuiz('all')">★ Full Mixed Review</div>
+
+    <!-- DATA STRUCTURES -->
+    <div class="sb-subject" id="sb-ds">
+      <div class="sb-subject-hd ds" onclick="toggleSubject('ds')">
+        <span class="sb-dot ds"></span>
+        Data Structures
+        <span class="sb-chevron">▶</span>
+      </div>
+      <div class="sb-lessons" id="sb-lessons-ds"></div>
+    </div>
+
+    <!-- PROJECT MANAGEMENT -->
+    <div class="sb-subject" id="sb-pm">
+      <div class="sb-subject-hd pm" onclick="toggleSubject('pm')">
+        <span class="sb-dot pm"></span>
+        Project Management
+        <span class="sb-chevron">▶</span>
+      </div>
+      <div class="sb-lessons" id="sb-lessons-pm"></div>
+    </div>
+
+    <!-- INFORMATION MANAGEMENT -->
+    <div class="sb-subject" id="sb-im">
+      <div class="sb-subject-hd im" onclick="toggleSubject('im')">
+        <span class="sb-dot im"></span>
+        Information Management
+        <span class="sb-chevron">▶</span>
+      </div>
+      <div class="sb-lessons" id="sb-lessons-im"></div>
+    </div>
+  </nav>
+
+  <main class="main" id="main"></main>
+</div>
+
+<script>
+/* ======================================================
+   QUESTION BANK
+   ====================================================== */
+const SUBJECTS = {
+  ds: { label:'Data Structures', color:'ds' },
+  pm: { label:'IS Project Management', color:'pm' },
+  im: { label:'Information Management', color:'im' }
+};
+
+const LESSONS = [
+/* ── DATA STRUCTURES ────────────────────────────── */
+{
+  id:'ds-w2', subject:'ds', week:'Week 2',
+  title:'Algorithms — Introduction & Properties',
+  questions:[
+    {t:'mc',q:'What is an algorithm?',opts:['A programming language','A sequence of steps that, when followed, accomplishes a particular task','A type of computer hardware','A database management system'],a:1},
+    {t:'mc',q:'After whom was the term "algorithm" named?',opts:['Alan Turing','Euclid','al-KhowArizmi','Charles Bachman'],a:2},
+    {t:'mc',q:'What is Computer Science defined as in the lesson?',opts:['The study of hardware design only','The study of mathematics','The field that studies how to solve problems effectively and efficiently with the aid of computers','The study of database systems'],a:2},
+    {t:'mc',q:'What are the two major subfields of Computer Science mentioned in the lesson?',opts:['Coding and Testing','Design and Analysis','Hardware and Software','Input and Output'],a:1},
+    {t:'mc',q:'Which famous historical algorithm is used to calculate the GCD of two integers?',opts:["Newton's Algorithm","Dijkstra's Algorithm","Euclid's Algorithm",'Bubble Sort'],a:2},
+    {t:'mc',q:'What does GCD stand for?',opts:['Greatest Common Divisor','General Code Definition','Graphical Component Design','Global Computation Directive'],a:0},
+    {t:'mc',q:'How many properties does an algorithm have?',opts:['3','4','5','6'],a:2},
+    {t:'mc',q:'Which property states that an algorithm must terminate within a finite amount of time?',opts:['Definiteness','Effectiveness','Input','Finiteness'],a:3},
+    {t:'mc',q:'Which property states that every step must be precise and unambiguous?',opts:['Finiteness','Definiteness','Effectiveness','Output'],a:1},
+    {t:'mc',q:'Which property states that every step should be easily convertible into code?',opts:['Finiteness','Definiteness','Effectiveness','Input'],a:2},
+    {t:'mc',q:'How many inputs must an algorithm accept according to the Input property?',opts:['Exactly one','At least one','Zero or more','Exactly two'],a:2},
+    {t:'mc',q:'How many outputs must an algorithm produce according to the Output property?',opts:['Zero or more','Exactly one','At least one (one or more)','Exactly two'],a:2},
+    {t:'mc',q:'The mnemonic FDEIO stands for the five properties. What does "E" stand for?',opts:['Evaluation','Effectiveness','Efficiency','Execution'],a:1},
+    {t:'mc',q:'Program notation concerns how algorithms are:',opts:['Executed on hardware','Described or represented as corresponding programs','Stored in databases','Marketed commercially'],a:1},
+    {t:'mc',q:'In the prime-number example, Algorithm 3 checks divisors up to:',opts:['n − 1','n / 2','√n','n²'],a:2},
+    {t:'mc',q:'In the prime-number example, Algorithm 2 checks divisors up to:',opts:['n − 1','n / 2','√n','2n'],a:1},
+    {t:'mc',q:'In the prime-number example, Algorithm 1 checks divisors from 2 up to:',opts:['n / 2','√n','n − 1','n + 1'],a:2},
+    {t:'mc',q:'The prime-number example demonstrates that:',opts:['Every problem has exactly one solution','A single problem can have different algorithms or methods of solving it','Algorithms always run in constant time','Prime numbers cannot be determined by algorithms'],a:1},
+    {t:'mc',q:'Which of the following is NOT listed as a process involved in studying an algorithm?',opts:['Designing','Validating','Marketing','Debugging'],a:2},
+    {t:'mc',q:'The correct flow for solving a problem using algorithms is:',opts:['Algorithm → Problem → Solution','Solution → Algorithm → Problem','Problem → Algorithm → Solution','Program → Problem → Algorithm'],a:2},
+    {t:'id',q:'An algorithm is a _______ of steps that, when followed, accomplishes a particular task.',a:['sequence']},
+    {t:'id',q:'The term "algorithm" was named after the ninth-century Persian mathematician _______.',a:['al-khowArizmi','al-khowarizmi','al khowArizmi']},
+    {t:'id',q:'Euclid\'s Algorithm is used to calculate the _______ of two integers.',a:['greatest common divisor','gcd']},
+    {t:'id',q:'The property that states "the algorithm must eventually terminate" is called _______.',a:['finiteness']},
+    {t:'id',q:'The property that states "every step must be precise and unambiguous" is called _______.',a:['definiteness']},
+    {t:'id',q:'The property that states "every step should be easily convertible into code" is called _______.',a:['effectiveness']},
+    {t:'id',q:'An algorithm must produce at least _______ output(s).',a:['one','1']},
+    {t:'id',q:'An algorithm must accept _______ or more inputs.',a:['zero','0']},
+    {t:'id',q:'Name the mnemonic abbreviation for the five algorithm properties (F, D, E, I, O stands for _).',a:['finiteness definiteness effectiveness input output','fdeio','f d e i o']},
+    {t:'id',q:'The two major subfields of Computer Science mentioned in the lesson are Design and _______.',a:['analysis']},
+  ]
+},
+{
+  id:'ds-w3', subject:'ds', week:'Week 3',
+  title:'Complexity, Asymptotic Notation & Big O',
+  questions:[
+    {t:'mc',q:'Time Complexity refers to:',opts:['The amount of memory a program uses','The number of machine instructions a program executes during its running time','The speed of the processor','The size of the source code'],a:1},
+    {t:'mc',q:'Space Complexity refers to:',opts:['The number of machine instructions executed','The physical size of the computer','The number of memory cells an algorithm needs','The disk storage required by the OS'],a:2},
+    {t:'mc',q:'In the expression c·n², what does "c" represent?',opts:['A variable','A constant','The number of inputs','The output size'],a:1},
+    {t:'mc',q:'In the expression c·n², what does "n" represent?',opts:['A constant','The output','The input/instance size','The number of processors'],a:2},
+    {t:'mc',q:'What is Performance Measurement?',opts:['The number of bugs in a program','The process of executing a correct program to measure the time and space needed to compute a result','The step of writing pseudocode','The process of designing an algorithm'],a:1},
+    {t:'mc',q:'Asymptotic Notation is:',opts:['A way to count the exact steps of a program','A method of expressing the order of magnitude of an algorithm','A graphical tool','A sorting technique'],a:1},
+    {t:'mc',q:'Big O Notation represents:',opts:['The best case / lower bound','The average case','The upper bound / worst case','The exact number of steps'],a:2},
+    {t:'mc',q:'What is the Big O Notation for Constant complexity?',opts:['O(log n)','O(n)','O(1)','O(n²)'],a:2},
+    {t:'mc',q:'What is the Big O Notation for Logarithmic complexity?',opts:['O(1)','O(log n)','O(n)','O(n²)'],a:1},
+    {t:'mc',q:'What is the Big O Notation for Linear complexity?',opts:['O(1)','O(log n)','O(n)','O(n log n)'],a:2},
+    {t:'mc',q:'What is the Big O Notation for Quadratic complexity?',opts:['O(n)','O(n log n)','O(n²)','O(n³)'],a:2},
+    {t:'mc',q:'What is the Big O Notation for Cubic complexity?',opts:['O(n²)','O(n³)','O(2ⁿ)','O(n log n)'],a:1},
+    {t:'mc',q:'What is the Big O Notation for Exponential complexity?',opts:['O(n³)','O(n²)','O(2ⁿ)','O(n!)'],a:2},
+    {t:'mc',q:'Which complexity grows the FASTEST?',opts:['O(n)','O(n²)','O(log n)','O(2ⁿ)'],a:3},
+    {t:'mc',q:'Which complexity grows the SLOWEST?',opts:['O(log n)','O(n)','O(1)','O(n log n)'],a:2},
+    {t:'mc',q:'The correct increasing order of complexity is:',opts:['O(1) < O(n) < O(log n) < O(n²) < O(n log n) < O(n³) < O(2ⁿ)','O(1) < O(log n) < O(n) < O(n log n) < O(n²) < O(n³) < O(2ⁿ)','O(log n) < O(1) < O(n) < O(n²) < O(n log n) < O(2ⁿ)','O(n) < O(1) < O(log n) < O(n²) < O(n³) < O(2ⁿ)'],a:1},
+    {t:'mc',q:'What is the Big O classification of 3n + 2?',opts:['O(1)','O(n)','O(n²)','O(log n)'],a:1},
+    {t:'mc',q:'What is the Big O classification of 10n² + 4n + 2?',opts:['O(n)','O(n log n)','O(n²)','O(n³)'],a:2},
+    {t:'mc',q:'In the Sum algorithm example, how many total instructions are executed?',opts:['n + 1','2n + 1','2n + 3','3n + 2'],a:2},
+    {t:'mc',q:'The Sum algorithm example demonstrates which type of complexity?',opts:['Constant','Logarithmic','Quadratic','Linear'],a:3},
+    {t:'mc',q:'The Time-Space Tradeoff considers the balance between:',opts:['Algorithms and programs','Computing time and memory consumption','Input size and output size','Design and analysis'],a:1},
+    {t:'id',q:'Time Complexity is the number of _______ a program executes during its running time.',a:['machine instructions','instructions']},
+    {t:'id',q:'Space Complexity is the number of _______ an algorithm needs.',a:['memory cells']},
+    {t:'id',q:'_______ Notation is a method of expressing the order of magnitude of an algorithm.',a:['asymptotic']},
+    {t:'id',q:'Big O Notation represents the upper bound and _______ case of an algorithm.',a:['worst']},
+    {t:'id',q:'O(1) is called _______ complexity.',a:['constant']},
+    {t:'id',q:'O(log n) is called _______ complexity.',a:['logarithmic']},
+    {t:'id',q:'O(n) is called _______ complexity.',a:['linear']},
+    {t:'id',q:'O(n²) is called _______ complexity.',a:['quadratic']},
+    {t:'id',q:'O(n³) is called _______ complexity.',a:['cubic']},
+    {t:'id',q:'O(2ⁿ) is called _______ complexity.',a:['exponential']},
+    {t:'id',q:'In the Sum algorithm, Statement (2) runs _______ times.',a:['n+1','n + 1']},
+    {t:'id',q:'Performance Measurement executes a correct program to measure the time and _______ needed.',a:['space']},
+  ]
+},
+
+/* ── PROJECT MANAGEMENT ─────────────────────────── */
+{
+  id:'pm-w2', subject:'pm', week:'Week 2',
+  title:'IS, IS Projects & Project Management',
+  questions:[
+    {t:'mc',q:'What is an Information System (IS)?',opts:['A type of software only','An organized combination of people, processes, data, and technology that supports the collection, processing, storage, and use of information','A hardware network only','A project management methodology'],a:1},
+    {t:'mc',q:'The value of an IS depends on:',opts:['The cost of its hardware','How modern its software is','How well it addresses the organization\'s real information and business needs','The number of users who access it'],a:2},
+    {t:'mc',q:'How many core components make up an Information System?',opts:['4','5','6','7'],a:2},
+    {t:'mc',q:'Which IS component includes users, managers, analysts, developers, and administrators?',opts:['Hardware','Software','People','Networks'],a:2},
+    {t:'mc',q:'Which IS component includes computers, mobile devices, servers, and network equipment?',opts:['Software','Hardware','Data','Processes'],a:1},
+    {t:'mc',q:'Which IS component consists of applications and system software that process and manage information?',opts:['Hardware','Data','Software','Networks'],a:2},
+    {t:'mc',q:'Which IS component consists of facts and records that are stored, processed, analyzed, and communicated?',opts:['Processes','Data','Networks','Software'],a:1},
+    {t:'mc',q:'Which IS component includes procedures and activities that define how work and information flow?',opts:['Data','Networks','Processes','Hardware'],a:2},
+    {t:'mc',q:'Which IS component connects users, devices, systems, and services via communication technologies?',opts:['Software','Data','Processes','Networks'],a:3},
+    {t:'mc',q:'At the Operations level, an IS supports:',opts:['Innovation and competitive advantage','Routine transactions and day-to-day activities','Planning and decision-making only','Strategic goals only'],a:1},
+    {t:'mc',q:'At the Management level, an IS provides:',opts:['Day-to-day data entry','Information for planning, monitoring, and decision-making','Only operational support','Hardware maintenance'],a:1},
+    {t:'mc',q:'At the Strategy level, an IS supports:',opts:['Routine transactions','Only HR processes','Innovation, organizational goals, and competitive advantage','Only data storage'],a:2},
+    {t:'mc',q:'A Student Information System is used for:',opts:['Products, orders, payments','Enrollment, grades, schedules, and student records','Patient records and billing','Accounts and transactions'],a:1},
+    {t:'mc',q:'A Banking System handles:',opts:['Courses and grades','Products, orders, payments','Accounts, transactions, authentication, and reporting','Patient records and appointments'],a:2},
+    {t:'mc',q:'A Hospital Information System handles:',opts:['Products, orders, payments','Accounts, transactions','Courses, activities, submissions','Patient records, appointments, billing, and services'],a:3},
+    {t:'mc',q:'A Learning Management System handles:',opts:['Accounts and transactions','Patient records','Courses, activities, submissions, and grades','Enrollment and scheduling only'],a:2},
+    {t:'mc',q:'An IS Project is BEST defined as:',opts:['An ongoing operational activity','A temporary effort to create, improve, replace, integrate, or implement an IS or related capability','A permanent department','A routine system maintenance task'],a:1},
+    {t:'mc',q:'What provides the structure for organizing work needed to achieve an IS project\'s intended result?',opts:['Hardware procurement','Project management','Marketing strategy','Database design'],a:1},
+    {t:'mc',q:'In the flow Business Need → __ → IS Solution → Value, what fills the blank?',opts:['IS Operation','IS Project','IS Component','IT Service'],a:1},
+    {t:'mc',q:'A project is best defined as:',opts:['An ongoing repetitive activity','A permanent organizational structure','A temporary endeavor to create a unique product, service, or result','A daily operational task'],a:2},
+    {t:'mc',q:'What does "Temporary" mean for a project?',opts:['The project can be cancelled anytime','The project has a defined beginning and ending','The team works part-time','The project is inexpensive'],a:1},
+    {t:'mc',q:'What does "Unique" mean for a project?',opts:['The project is expensive','The result has characteristics that distinguish it from routine operational work','The project uses rare technology','One person manages it'],a:1},
+    {t:'mc',q:'Projects require coordinated planning of:',opts:['Only scope and cost','Scope, schedule, cost, resources, quality, and risk','Only schedule and resources','Only quality and risk'],a:1},
+    {t:'mc',q:'OPERATIONS is best characterized as:',opts:['Temporary and unique','Ongoing, repetitive, and continuous activities maintaining organizational services','A one-time deliverable','A defined-objective activity'],a:1},
+    {t:'mc',q:'"Developing a new enrollment system" is an example of:',opts:['An operation','A project','A service','A risk'],a:1},
+    {t:'mc',q:'"Running the existing enrollment service" is an example of:',opts:['A project','An operation','A risk','A constraint'],a:1},
+    {t:'mc',q:'Project Management is best defined as:',opts:['Writing project documentation only','The application of knowledge, skills, tools, and techniques to project activities to meet project requirements','Managing only the project budget','Only scheduling meetings'],a:1},
+    {t:'mc',q:'What is the correct order of Project Management Process Groups?',opts:['Plan → Initiate → Execute → Monitor → Close','Initiate → Plan → Execute → Monitor & Control → Close','Execute → Plan → Initiate → Close → Monitor','Monitor → Plan → Execute → Initiate → Close'],a:1},
+    {t:'mc',q:'Which PM process group defines the project at a high level and authorizes work?',opts:['Planning','Executing','Initiating','Closing'],a:2},
+    {t:'mc',q:'Which PM process group develops the approach, scope, schedule, resources, and supporting plans?',opts:['Initiating','Planning','Executing','Monitoring & Controlling'],a:1},
+    {t:'mc',q:'Which PM process group tracks performance, manages changes, and corrects deviations?',opts:['Initiating','Planning','Executing','Monitoring & Controlling'],a:3},
+    {t:'mc',q:'Which PM process group completes the work, evaluates results, and formally closes the project?',opts:['Initiating','Planning','Monitoring & Controlling','Closing'],a:3},
+    {t:'mc',q:'Which PM Knowledge Area is NOT listed in the material?',opts:['Integration','Scope','Marketing','Procurement'],a:2},
+    {t:'mc',q:'The Triple Constraint consists of:',opts:['People, Process, Technology','Scope, Time, Cost','Quality, Risk, Stakeholder','Plan, Execute, Close'],a:1},
+    {t:'mc',q:'Project Quality is NOT simply:',opts:['Fitness for purpose','Conformance and reliability','Making the system look good','Meeting agreed expectations'],a:2},
+    {t:'mc',q:'Quality Assurance (QA) is:',opts:['Output-focused: examines deliverables for defects','Process-focused: establishes and improves processes','A one-time final review','The same as Quality Control'],a:1},
+    {t:'mc',q:'Quality Control (QC) is:',opts:['Process-focused: establishes processes','Deliverable/output-focused: examines outputs and detects defects','Performed only at project start','The same as Quality Assurance'],a:1},
+    {t:'mc',q:'The correct Quality Pipeline order is:',opts:['Standards → Requirements → Control → Assurance → Improve','Requirements → Standards → Assurance → Control → Improve','Assurance → Requirements → Standards → Improve → Control','Control → Assurance → Standards → Requirements → Improve'],a:1},
+    {t:'mc',q:'Which PM skill group covers "planning, scheduling, estimation, requirements, risk, quality, and tools"?',opts:['Leadership','Communication','Technical/PM Knowledge','Business/Strategic Thinking'],a:2},
+    {t:'mc',q:'Which PM skill group covers "listening, reporting, presenting, and documenting"?',opts:['Leadership','Technical/PM Knowledge','Business/Strategic Thinking','Communication'],a:3},
+    {t:'id',q:'An Information System is an organized combination of people, processes, data, and _______ that supports information collection, processing, storage, and use.',a:['technology']},
+    {t:'id',q:'The six core IS components are People, Hardware, Software, Data, Processes, and _______.',a:['networks']},
+    {t:'id',q:'A project is a _______ endeavor undertaken to create a unique product, service, or result.',a:['temporary']},
+    {t:'id',q:'An IS Project is a _______ effort to create, improve, replace, integrate, or implement an IS.',a:['temporary']},
+    {t:'id',q:'Good project management turns an intended result into a controlled and _______ process.',a:['coordinated']},
+    {t:'id',q:'The five PM process groups are Initiate, Plan, Execute, Monitor & Control, and _______.',a:['close','closing']},
+    {t:'id',q:'The three elements of the Triple Constraint are Scope, Time, and _______.',a:['cost']},
+    {t:'id',q:'Quality _______ (QA) is process-focused.',a:['assurance']},
+    {t:'id',q:'Quality _______ (QC) is deliverable/output-focused.',a:['control']},
+    {t:'id',q:'The mnemonic for the six IS core components is P-H-S-D-P-N. The "N" stands for _______.',a:['networks']},
+    {t:'id',q:'The four PM skill groups are Technical, Leadership, Communication, and _______.',a:['business','business/strategic thinking']},
+    {t:'id',q:'"Planning without _______ creates misunderstandings."',a:['communication']},
+    {t:'id',q:'"Monitoring without _______ does not correct problems."',a:['decisions']},
+  ]
+},
+{
+  id:'pm-w3', subject:'pm', week:'Week 3',
+  title:'IT Projects, Software Crisis, ITIL & OOA',
+  questions:[
+    {t:'mc',q:'An IT Project is best defined as:',opts:['A permanent IT department','A temporary effort using technology, people, processes, and resources to produce a specific IT-related deliverable or outcome','A routine IT support task','An ongoing IT service operation'],a:1},
+    {t:'mc',q:'Which is NOT listed as an IT project example in the material?',opts:['Software Development','Cloud Migration','Employee Orientation','Cybersecurity Implementation'],a:2},
+    {t:'mc',q:'Is technology always the main reason an IT project fails?',opts:['Yes, always','No — people, processes, management, and organizational factors can also contribute','Only budget causes failure','Changing requirements are always the sole cause'],a:1},
+    {t:'mc',q:'The Software Crisis refers to:',opts:['A shortage of programmers','Difficulties in developing and maintaining software as systems became increasingly large, complex, and demanding','A specific computer virus outbreak','The failure of a single company'],a:1},
+    {t:'mc',q:'Which is NOT a symptom of the Software Crisis?',opts:['Schedule Problems','Cost Problems','Projects finish ahead of schedule','Maintenance Problems'],a:2},
+    {t:'mc',q:'"Development takes longer than expected" is which Software Crisis symptom?',opts:['Cost Problems','Quality Problems','Schedule Problems','Maintenance Problems'],a:2},
+    {t:'mc',q:'"Project costs exceed the budget" is which Software Crisis symptom?',opts:['Schedule Problems','Cost Problems','Quality Problems','Requirement Problems'],a:1},
+    {t:'mc',q:'"The final system does not match user expectations" is which Software Crisis symptom?',opts:['Quality Problems','Schedule Problems','Cost Problems','Requirement Problems'],a:3},
+    {t:'mc',q:'"Software becomes difficult and expensive to maintain" is which symptom?',opts:['Cost Problems','Quality Problems','Requirement Problems','Maintenance Problems'],a:3},
+    {t:'mc',q:'Which contributing factor to the Software Crisis states "modern systems have many interconnected components"?',opts:['Changing Requirements','Poor Estimation','Increasing Complexity','Communication Problems'],a:2},
+    {t:'mc',q:'Which contributing factor states "users may change their expectations during development"?',opts:['Increasing Complexity','Changing Requirements','Poor Estimation','Weak Project Management'],a:1},
+    {t:'mc',q:'Which contributing factor states "time, cost, and resources may be underestimated"?',opts:['Changing Requirements','Poor Estimation','Communication Problems','Rapid Technology Changes'],a:1},
+    {t:'mc',q:'The key message about addressing the Software Crisis is:',opts:['Good technology alone guarantees project success','Testing eliminates all problems','Good technology alone does NOT guarantee a successful software project','Only experienced programmers can prevent failure'],a:2},
+    {t:'mc',q:'Software Project Management (SPM) involves:',opts:['Only writing code','Applying project management principles and practices to software development projects','Only managing licenses','Only testing software'],a:1},
+    {t:'mc',q:'The Software Project Manager must understand which four areas?',opts:['Hardware, Software, Networks, Data','People, Process, Technology, Business','Scope, Time, Cost, Quality','Initiate, Plan, Execute, Close'],a:1},
+    {t:'mc',q:'What does ITIL stand for?',opts:['Information Technology Integrated Library','Information Technology Infrastructure Library','Integrated Technology Infrastructure Library','Information Technology Implementation Lifecycle'],a:1},
+    {t:'mc',q:'ITIL is a framework of practices for:',opts:['Software development only','Project management only','IT service management','Hardware procurement'],a:2},
+    {t:'mc',q:'The correct distinction between Project Management and IT Service Management is:',opts:['Both focus on temporary objectives','Project Management focuses on temporary objectives; IT Service Management focuses on delivering and managing ongoing IT services','IT Service Management focuses on temporary objectives','They are identical'],a:1},
+    {t:'mc',q:'"Develop a website" is an example of:',opts:['An IT Service','An Operation','A Project','A Risk'],a:2},
+    {t:'mc',q:'"Maintain web hosting" is an example of:',opts:['A Project','An IT Service','A Project Life Cycle stage','A QA process'],a:1},
+    {t:'mc',q:'The Service Phase order after implementation is:',opts:['Design → Develop → Test → Implement','Operate → Support → Monitor → Improve','Initiate → Plan → Execute → Close','Requirements → Analysis → Design → Development'],a:1},
+    {t:'mc',q:'The Object-Oriented Approach (OOA) views a system as:',opts:['A single large program','A flat database table','A collection of objects containing data, behavior, and relationships','A network of computers only'],a:2},
+    {t:'mc',q:'A Class is best described as:',opts:['A specific instance created from a blueprint','A blueprint or template describing what an object should contain','A method that performs an action','A relationship between two objects'],a:1},
+    {t:'mc',q:'An Object is best described as:',opts:['A blueprint or template','A specific instance created from a class','A database table','A process flow'],a:1},
+    {t:'mc',q:'Which OOP concept "combines data and operations into one unit"?',opts:['Abstraction','Inheritance','Polymorphism','Encapsulation'],a:3},
+    {t:'mc',q:'Which OOP concept "focuses on important characteristics while hiding unnecessary details"?',opts:['Encapsulation','Abstraction','Inheritance','Polymorphism'],a:1},
+    {t:'mc',q:'Which OOP concept "allows one class to inherit characteristics from another"?',opts:['Encapsulation','Abstraction','Inheritance','Polymorphism'],a:2},
+    {t:'mc',q:'Which OOP concept "allows objects to respond differently to the same operation"?',opts:['Encapsulation','Abstraction','Inheritance','Polymorphism'],a:3},
+    {t:'mc',q:'In a university system OOA, the correct relationship chain is:',opts:['Course → Student → Enrollment','Enrollment → Course → Student','Student → Enrollment → Course','Student → Course → Enrollment'],a:2},
+    {t:'mc',q:'The Project Life Cycle focuses on:',opts:['Developing the IT solution','Managing the project: Initiation, Planning, Execution, Monitoring, Closing','Only the testing phase','Only the deployment phase'],a:1},
+    {t:'mc',q:'The Development Life Cycle focuses on:',opts:['Managing project scope only','Developing the IT solution: Requirements, Analysis, Design, Development, Testing, Deployment, Maintenance','Only project closure','Only stakeholder communication'],a:1},
+    {t:'mc',q:'In the Socio-Technical Perspective, which is a TECHNICAL factor?',opts:['People','Organizational culture','Policies','Hardware'],a:3},
+    {t:'mc',q:'In the Socio-Technical Perspective, which is a SOCIAL factor?',opts:['Databases','Networks','Security','Leadership'],a:3},
+    {t:'id',q:'The five symptoms of the Software Crisis mnemonic is S-C-Q-R-M. "R" stands for _______ Problems.',a:['requirement','requirements']},
+    {t:'id',q:'The five symptoms of the Software Crisis mnemonic is S-C-Q-R-M. "M" stands for _______ Problems.',a:['maintenance']},
+    {t:'id',q:'ITIL stands for Information Technology _______ Library.',a:['infrastructure']},
+    {t:'id',q:'A Software Project Manager must understand People, Process, Technology, and _______.',a:['business']},
+    {t:'id',q:'In OOA, a _______ is a blueprint or template describing what an object should contain.',a:['class']},
+    {t:'id',q:'In OOA, an _______ is a specific instance created from a class.',a:['object']},
+    {t:'id',q:'The four OOA key concepts are Encapsulation, Abstraction, Inheritance, and _______.',a:['polymorphism']},
+    {t:'id',q:'"Project management manages the _______; development processes guide how the IT solution is created."',a:['work']},
+    {t:'id',q:'The key Software Crisis mnemonic for symptoms is S-C-Q-R-M. "S" stands for _______ Problems.',a:['schedule']},
+    {t:'id',q:'"Good technology alone does not guarantee a successful _______ project."',a:['software']},
+    {t:'id',q:'In the Socio-Technical Perspective, _______ culture is listed as a social factor.',a:['organizational']},
+    {t:'id',q:'The key OOA concept mnemonic EAIP: "E" stands for _______.',a:['encapsulation']},
+    {t:'id',q:'The key OOA concept mnemonic EAIP: "P" stands for _______.',a:['polymorphism']},
+  ]
+},
+
+/* ── INFORMATION MANAGEMENT ─────────────────────── */
+{
+  id:'im-w2', subject:'im', week:'Week 2',
+  title:'IM Concepts, Databases & File Systems',
+  questions:[
+    {t:'mc',q:'Who designed the first computerized database (1960)?',opts:['E. F. Codd','Alan Turing','Charles Bachman','Grace Hopper'],a:2},
+    {t:'mc',q:'Who released the paper "A Relational Model of Data for Large Shared Data Banks" (1970)?',opts:['Charles Bachman','E. F. Codd','Tim Berners-Lee','Edgar Dijkstra'],a:1},
+    {t:'mc',q:'What became the standard database language in the 1980s?',opts:['HTML','XML','SQL','Python'],a:2},
+    {t:'mc',q:'Which of the following is a disadvantage of a File System?',opts:['Data independence','Less redundancy','Program-Data Dependence','Multiuser access'],a:2},
+    {t:'mc',q:'How many disadvantages of a File System are listed in the material?',opts:['3','4','5','6'],a:2},
+    {t:'mc',q:'Which File System disadvantage means "the same data may be stored multiple times"?',opts:['Program-Data Dependence','Limited Data Sharing','Duplication of Data','Excessive Program Maintenance'],a:2},
+    {t:'mc',q:'Which File System disadvantage means "information is difficult to share across different users/programs"?',opts:['Program-Data Dependence','Limited Data Sharing','Duplication of Data','Lengthy Development Times'],a:1},
+    {t:'mc',q:'A Database is best defined as:',opts:['A single table of data','A shared collection of related data used to support the activities of a particular organization','A programming language','A type of hardware'],a:1},
+    {t:'mc',q:'How many major parts make up a Database System?',opts:['3','4','5','6'],a:2},
+    {t:'mc',q:'Which is NOT a major part of a Database System?',opts:['Hardware','Software','Marketing','People'],a:2},
+    {t:'mc',q:'A DBMS stores data in a way that makes it easier to:',opts:['Print reports only','Retrieve, manipulate, and produce information','Buy and sell data','Write programming code'],a:1},
+    {t:'mc',q:'Which is NOT a characteristic of a DBMS listed in the material?',opts:['Less Redundancy','Consistency','ACID Properties','Program-Data Dependence'],a:3},
+    {t:'mc',q:'A location where an individual data item is stored is called:',opts:['Table','Record','Field','Schema'],a:2},
+    {t:'mc',q:'A combination of fields forms a:',opts:['Record','Table','Field','Database'],a:1},
+    {t:'mc',q:'What does SQL stand for?',opts:['Structured Query Language','Simple Query Library','Standard Queue Language','System Query Link'],a:0},
+    {t:'mc',q:'Information Management is best described as:',opts:['Only the technology used to store data','The infrastructure used to collect, manage, preserve, store, and deliver information','Only the software used by a company','Only the hardware used to store data'],a:1},
+    {t:'mc',q:'Information Management is more than technology. It also includes:',opts:['Only hardware and software','Business processes, organizational practices, information architecture, metadata, content quality, and the information itself','Only policies','Only databases'],a:1},
+    {t:'mc',q:'The key idea of "Information as an Asset" means:',opts:['Information has no monetary value','All information (digital and physical) is an asset that requires proper management','Only digital information is an asset','Information assets are only financial records'],a:1},
+    {t:'mc',q:'The purpose of Information Management is:',opts:['To design, develop, manage, and use information with insight and innovation, and to support decision-making and create value','To only store data in databases','To sell information to third parties','To only manage hardware assets'],a:0},
+    {t:'mc',q:'Which DBMS characteristic means "multiple users can access the database"?',opts:['Security','Less Redundancy','Multiuser and Concurrent Access','Query Language'],a:2},
+    {t:'id',q:'Charles _______ designed the first computerized database in 1960.',a:['bachman']},
+    {t:'id',q:'E. F. Codd introduced the Relational Model in _______.',a:['1970']},
+    {t:'id',q:'SQL stands for Structured _______ Language.',a:['query']},
+    {t:'id',q:'The five disadvantages of a File System are: Program-Data Dependence, Duplication of Data, Limited Data Sharing, Lengthy Development Times, and Excessive Program _______.',a:['maintenance']},
+    {t:'id',q:'A _______ is a shared collection of related data used to support an organization\'s activities.',a:['database']},
+    {t:'id',q:'A Database Management System is abbreviated _______.',a:['dbms','DBMS']},
+    {t:'id',q:'The five major parts of a Database System are Hardware, Software, People, Procedures, and _______.',a:['data']},
+    {t:'id',q:'A _______ is a location where an individual data item is stored.',a:['field']},
+    {t:'id',q:'A combination of fields forms a _______.',a:['table']},
+    {t:'id',q:'The Data Item → _______ → Table relationship shows the structure of a database.',a:['field']},
+    {t:'id',q:'Information Management allows information to be available to the right _______ at the right time.',a:['people']},
+    {t:'id',q:'The five IM activities are: Collect, Manage, Preserve, Store, and _______.',a:['deliver']},
+  ]
+},
+{
+  id:'im-w34', subject:'im', week:'Week 3–4',
+  title:'DBMS Architecture, Schema, Data Models & Languages',
+  questions:[
+    {t:'mc',q:'How many types of DBMS Architecture are listed in the material?',opts:['2','3','4','5'],a:1},
+    {t:'mc',q:'Which DBMS Architecture type adds a server/application layer between the client and database?',opts:['Single-Tier','Two-Tier','Three-Tier','Zero-Tier'],a:2},
+    {t:'mc',q:'The DBMS Three-Level Architecture (from top to bottom) is:',opts:['Internal → Conceptual → External','External → Conceptual → Internal','Conceptual → External → Internal','Physical → Logical → View'],a:1},
+    {t:'mc',q:'The Three Levels of Data Abstraction (from highest to lowest) are:',opts:['Physical → Logical → View','Internal → Conceptual → External','View → Logical → Physical','Conceptual → View → Physical'],a:2},
+    {t:'mc',q:'The External Level in Three-Level Architecture corresponds to which Data Abstraction level?',opts:['Physical Level','Logical Level','View Level','Instance Level'],a:2},
+    {t:'mc',q:'The Conceptual Level corresponds to which Data Abstraction level?',opts:['View Level','Logical Level','Physical Level','Instance Level'],a:1},
+    {t:'mc',q:'The Internal Level corresponds to which Data Abstraction level?',opts:['View Level','Logical Level','Physical Level','Instance Level'],a:2},
+    {t:'mc',q:'A Schema is best defined as:',opts:['The data stored in a database at a moment in time','The design of a database','A type of query language','A database user role'],a:1},
+    {t:'mc',q:'An Instance is best defined as:',opts:['The design of a database','The blueprint of a database','The data stored in a database at a particular moment in time','A type of schema'],a:2},
+    {t:'mc',q:'Schema is to Design as Instance is to:',opts:['Blueprint','Snapshot/Data at a particular moment','Structure','Language'],a:1},
+    {t:'mc',q:'How many types of Data Models are listed in the lesson?',opts:['3','4','5','6'],a:1},
+    {t:'mc',q:'Which of the following is NOT a listed Data Model?',opts:['Relational Data Model','Entity-Relationship Data Model','Network Data Model','Object-Based Data Model'],a:2},
+    {t:'mc',q:'Data Independence is:',opts:['The ability to change data without updating the DBMS','The capacity to change the schema at one level without having to change the schema at the next higher level','The ability to copy data between databases','The independence of data from users'],a:1},
+    {t:'mc',q:'How many types of Data Independence are listed?',opts:['1','2','3','4'],a:1},
+    {t:'mc',q:'DDL stands for:',opts:['Data Download Language','Data Definition Language','Database Direct Link','Data Design Layer'],a:1},
+    {t:'mc',q:'DML stands for:',opts:['Data Modification Language','Database Management Link','Data Manipulation Language','Data Module Library'],a:2},
+    {t:'mc',q:'DCL stands for:',opts:['Data Concept Language','Data Control Language','Database Connection Layer','Data Coding Library'],a:1},
+    {t:'mc',q:'Which DDL command creates objects in the database?',opts:['ALTER','DROP','CREATE','TRUNCATE'],a:2},
+    {t:'mc',q:'Which DDL command alters the structure of the database?',opts:['CREATE','DROP','ALTER','TRUNCATE'],a:2},
+    {t:'mc',q:'Which DDL command deletes objects from the database?',opts:['CREATE','ALTER','TRUNCATE','DROP'],a:3},
+    {t:'mc',q:'Which DDL command removes all records from a table?',opts:['DROP','ALTER','TRUNCATE','DELETE'],a:2},
+    {t:'mc',q:'Which DML command retrieves data from a database?',opts:['INSERT','UPDATE','DELETE','SELECT'],a:3},
+    {t:'mc',q:'Which DML command adds data into a table?',opts:['SELECT','INSERT','UPDATE','DELETE'],a:1},
+    {t:'mc',q:'Which DML command modifies existing data in a table?',opts:['SELECT','INSERT','UPDATE','DELETE'],a:2},
+    {t:'mc',q:'Which DCL command gives a user access privileges?',opts:['REVOKE','GRANT','ALTER','DROP'],a:1},
+    {t:'mc',q:'Which DCL command takes back permissions from a user?',opts:['GRANT','DROP','REVOKE','DELETE'],a:2},
+    {t:'mc',q:'DDL is to "Define" as DML is to:',opts:['Define','Control','Manipulate','Delete'],a:2},
+    {t:'mc',q:'The four DBMS language categories shown in the diagram are:',opts:['DDL, DML, DCL, and TCL','DDL, DML, SQL, and DCL','SQL, DCL, DDL, and XML','DDL, DQL, DML, and DCL'],a:0},
+    {t:'id',q:'A _______ is the design of a database.',a:['schema']},
+    {t:'id',q:'An _______ is the data stored in a database at a particular moment in time.',a:['instance']},
+    {t:'id',q:'The three levels of DBMS architecture are Single-Tier, Two-Tier, and _______-Tier.',a:['three','3']},
+    {t:'id',q:'The DBMS Three-Level Architecture levels are External, Conceptual, and _______.',a:['internal']},
+    {t:'id',q:'The three Data Abstraction levels are View, Logical, and _______.',a:['physical']},
+    {t:'id',q:'Data _______ is the capacity to change the schema at one level without changing the next higher level.',a:['independence']},
+    {t:'id',q:'The two types of Data Independence are Logical and _______ Data Independence.',a:['physical']},
+    {t:'id',q:'DDL stands for Data _______ Language.',a:['definition']},
+    {t:'id',q:'DML stands for Data _______ Language.',a:['manipulation']},
+    {t:'id',q:'DCL stands for Data _______ Language.',a:['control']},
+    {t:'id',q:'The DDL command used to remove all records from a table is _______.',a:['truncate']},
+    {t:'id',q:'The DML command used to retrieve data is _______.',a:['select']},
+    {t:'id',q:'The DCL command that gives user access privileges is _______.',a:['grant']},
+    {t:'id',q:'The DCL command that takes back permissions is _______.',a:['revoke']},
+    {t:'id',q:'Four Data Models: Relational, Semistructured, Entity-Relationship, and _______.',a:['object-based']},
+  ]
+},
+{
+  id:'im-w5', subject:'im', week:'Week 5',
+  title:'Entity Relationship Diagrams (ERD)',
+  questions:[
+    {t:'mc',q:'The ER Model is best described as:',opts:['A programming language','A high-level conceptual data model diagram','A type of database language','A hardware architecture'],a:1},
+    {t:'mc',q:'An ER Diagram (ERD) is:',opts:['A source code file','A visual tool used to represent an ER Model and display relationships of entity sets','A type of database schema only','A type of query language'],a:1},
+    {t:'mc',q:'How many components does an ER Diagram have?',opts:['2','3','4','5'],a:1},
+    {t:'mc',q:'Which ERD symbol represents an Entity?',opts:['Ellipse','Diamond','Rectangle','Line'],a:2},
+    {t:'mc',q:'Which ERD symbol represents an Attribute?',opts:['Rectangle','Diamond','Line','Ellipse'],a:3},
+    {t:'mc',q:'Which ERD symbol represents a Relationship?',opts:['Rectangle','Ellipse','Diamond','Line'],a:2},
+    {t:'mc',q:'What does an underlined attribute name in an ERD represent?',opts:['A derived attribute','A multi-valued attribute','A primary key attribute','A weak entity'],a:2},
+    {t:'mc',q:'A Strong Entity is best defined as:',opts:['An entity that depends on another entity\'s key','An entity with sufficient attributes to uniquely identify itself; has a Primary Key','An entity with no attributes','An entity with only derived attributes'],a:1},
+    {t:'mc',q:'A Weak Entity is best defined as:',opts:['An entity with many attributes','An entity with a primary key only','An entity without its own key attribute; identified using another entity\'s Primary Key','An entity with derived attributes only'],a:2},
+    {t:'mc',q:'How many types of attributes are listed in the lesson?',opts:['3','4','5','6'],a:2},
+    {t:'mc',q:'A Simple Attribute is:',opts:['An attribute made of multiple simple attributes','An attribute derived from another attribute','An atomic value that cannot be divided further','An attribute with multiple values'],a:2},
+    {t:'mc',q:'A Composite Attribute is:',opts:['An attribute that cannot be divided','An attribute calculated from another','An attribute made of more than one simple attribute','An attribute with exactly one value'],a:2},
+    {t:'mc',q:'A Derived Attribute is:',opts:['An attribute that cannot be divided','An attribute that does not exist directly in the physical database; its value is derived from other attributes','An attribute with multiple values','An attribute with only one value'],a:1},
+    {t:'mc',q:'Which is an example of a Derived Attribute?',opts:['Mobile Number','First Name + Last Name','Social Security Number','Age (derived from Date of Birth)'],a:3},
+    {t:'mc',q:'A Multi-Valued Attribute is:',opts:['An attribute that cannot be divided','An attribute with exactly one value','An attribute that may contain more than one value','An attribute derived from another'],a:2},
+    {t:'mc',q:'A Single-Valued Attribute contains:',opts:['Zero values','One value only','Multiple values','A calculated value'],a:1},
+    {t:'mc',q:'A Relationship in ERD describes:',opts:['The attributes of an entity','The association among entities','The primary key of an entity','The structure of a table'],a:1},
+    {t:'mc',q:'Which relationship type means "one entity can relate to many entities"?',opts:['One-to-One','One-to-Many','Many-to-One','Many-to-Many'],a:1},
+    {t:'mc',q:'Which relationship type means "many entities can relate to one entity"?',opts:['One-to-One','One-to-Many','Many-to-One','Many-to-Many'],a:2},
+    {t:'mc',q:'Which relationship type means "many entities on one side relate to many on the other"?',opts:['One-to-One','One-to-Many','Many-to-One','Many-to-Many'],a:3},
+    {t:'mc',q:'Cardinality Constraints specify:',opts:['The data type of attributes','The maximum number of entity instances that can be associated with instances of another entity','The number of tables in a database','The number of attributes in an entity'],a:1},
+    {t:'mc',q:'A Mandatory relationship means:',opts:['The relationship may or may not occur','The relationship starts at zero','The relationship must occur; minimum of 1','The relationship can start at 0'],a:2},
+    {t:'mc',q:'An Optional relationship means:',opts:['The relationship must always occur','The relationship always involves exactly one entity','The relationship may or may not occur; can start at 0','The relationship involves at least 2 entities'],a:2},
+    {t:'mc',q:'Crow\'s Foot Notation is used to represent:',opts:['SQL commands','Algorithm complexity','Relationship types/cardinalities in ERD','DBMS architecture'],a:2},
+    {t:'mc',q:'What is the CORRECT order of steps to create an ERD?',opts:['Identify Attributes → Identify Entities → Identify Relationships → Identify Cardinality → Create ERD','Entity Identification → Relationship Identification → Cardinality Identification → Identify Attributes → Create the ERD','Create the ERD → Entity Identification → Relationship Identification → Cardinality Identification → Identify Attributes','Cardinality → Entity → Attribute → Relationship → Create ERD'],a:1},
+    {t:'mc',q:'In the University ERD example, the entities are Student, Course, and:',opts:['Department','Employee','Professor','Administrator'],a:2},
+    {t:'mc',q:'In the University ERD example, Student is related to Course through:',opts:['Delivers','Manages','Assigned','Enrolls'],a:2},
+    {t:'mc',q:'In the University ERD example, Professor is related to Course through:',opts:['Assigned','Delivers','Enrolls','Manages'],a:1},
+    {t:'mc',q:'Which entity type is identified as "a category of entity that includes Account and Course"?',opts:['Person','Place','Object','Concept'],a:3},
+    {t:'id',q:'ER Model stands for Entity-_______ Model.',a:['relationship']},
+    {t:'id',q:'An ERD has three components: Entities, Attributes, and _______.',a:['relationships']},
+    {t:'id',q:'A Rectangle in an ERD represents an _______.',a:['entity']},
+    {t:'id',q:'An Ellipse in an ERD represents an _______.',a:['attribute']},
+    {t:'id',q:'A Diamond in an ERD represents a _______.',a:['relationship']},
+    {t:'id',q:'A _______ Entity has sufficient attributes to uniquely identify itself and has a Primary Key.',a:['strong']},
+    {t:'id',q:'A _______ Entity does not have its own key attribute.',a:['weak']},
+    {t:'id',q:'A _______ Attribute cannot be divided into smaller parts (atomic value).',a:['simple']},
+    {t:'id',q:'A _______ Attribute consists of more than one simple attribute (e.g., First Name + Last Name).',a:['composite']},
+    {t:'id',q:'A _______ Attribute does not exist in the physical database; its value is calculated from another attribute.',a:['derived']},
+    {t:'id',q:'Age derived from Date of Birth is an example of a _______ Attribute.',a:['derived']},
+    {t:'id',q:'A _______ Attribute may contain more than one value (e.g., multiple phone numbers).',a:['multi-valued']},
+    {t:'id',q:'Cardinality Constraints specify the _______ number of entity instances that can be associated.',a:['maximum']},
+    {t:'id',q:'A Mandatory relationship starts at a minimum of _______ (one).',a:['1','one']},
+    {t:'id',q:'An Optional relationship can start at a minimum of _______ (zero).',a:['0','zero']},
+    {t:'id',q:'_______ Notation is used to visually represent relationship cardinalities in ERDs.',a:["crow's foot","crowsfoot","crow foot"]},
+    {t:'id',q:'The 5 ERD creation steps are: Identify Entities → Identify Relationships → Identify Cardinality → Identify Attributes → _______.',a:['create the erd','create erd']},
+  ]
+},
+];
+
+/* ======================================================
+   STATE
+   ====================================================== */
+let gC=0,gW=0,gS=0;
+let curQueue=[],curMeta={},curAnswers=[],retryQ=[];
+
+function norm(s){return String(s).toLowerCase().trim().replace(/[^a-z0-9 ]/g,'').replace(/\s+/g,' ');}
+function isIDCorrect(q,val){
+  if(!val||val==='')return false;
+  const arr=Array.isArray(q.a)?q.a:[q.a];
+  const n=norm(val);
+  return arr.some(a=>{
+    const na=norm(a);
+    return na===n||na.split(' ').every(w=>n.includes(w))||n.split(' ').every(w=>na.includes(w));
+  });
+}
+function shuffle(a){const b=[...a];for(let i=b.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[b[i],b[j]]=[b[j],b[i]];}return b;}
+
+/* ======================================================
+   SIDEBAR BUILD
+   ====================================================== */
+function buildSidebar(){
+  ['ds','pm','im'].forEach(sub=>{
+    const cont=document.getElementById(`sb-lessons-${sub}`);
+    cont.innerHTML='';
+    LESSONS.filter(l=>l.subject===sub).forEach(l=>{
+      const div=document.createElement('div');
+      div.className=`sb-lesson ${sub}`;
+      div.id=`sbl-${l.id}`;
+      div.innerHTML=`<span style="font-size:11px;color:var(--ink3);margin-right:4px;">${l.week}</span><span>${l.title}</span><span class="sb-count">${l.questions.length}</span>`;
+      div.onclick=()=>startQuiz(l.id);
+      cont.appendChild(div);
+    });
+  });
+}
+function toggleSubject(sub){
+  const el=document.getElementById(`sb-${sub}`);
+  el.classList.toggle('open');
+}
+function setActiveLesson(id){
+  document.querySelectorAll('.sb-lesson').forEach(el=>el.classList.remove('active'));
+  if(id&&id!=='all'){
+    const el=document.getElementById(`sbl-${id}`);
+    if(el)el.classList.add('active');
+  }
+}
+
+/* ======================================================
+   HOME
+   ====================================================== */
+function showHome(){
+  setActiveLesson(null);
+  const totalQ=LESSONS.reduce((s,l)=>s+l.questions.length,0);
+  const mcQ=LESSONS.reduce((s,l)=>s+l.questions.filter(q=>q.t==='mc').length,0);
+  const idQ=LESSONS.reduce((s,l)=>s+l.questions.filter(q=>q.t==='id').length,0);
+  let html=`
+    <div class="home-header">
+      <h1>Midterms Quiz Generator</h1>
+      <p>Covers all lessons across Data Structures, IS Project Management, and Information Management. Wrong answers automatically retry until mastered.</p>
+      <div class="home-stats">
+        <div class="hstat"><div class="hn">${totalQ}</div><div class="hl">Total Questions</div></div>
+        <div class="hstat"><div class="hn">${mcQ}</div><div class="hl">Multiple Choice</div></div>
+        <div class="hstat"><div class="hn">${idQ}</div><div class="hl">Identification</div></div>
+        <div class="hstat"><div class="hn">${LESSONS.length}</div><div class="hl">Lesson Sets</div></div>
+      </div>
+    </div>
+  `;
+  ['ds','pm','im'].forEach(sub=>{
+    const sinfo=SUBJECTS[sub];
+    const sLessons=LESSONS.filter(l=>l.subject===sub);
+    html+=`<div class="subject-section">
+      <div class="subject-section-hd ${sub}">
+        <span class="subject-pill ${sub}">${sinfo.label}</span>
+        ${sLessons.reduce((s,l)=>s+l.questions.length,0)} questions
+      </div>
+      <div class="lesson-grid">`;
+    sLessons.forEach(l=>{
+      html+=`<div class="lcard ${sub}" onclick="startQuiz('${l.id}')">
+        <div class="lc-week">${l.week}</div>
+        <h3>${l.title}</h3>
+        <div class="lc-q">${l.questions.length} questions</div>
+        <div class="lc-bar"><div class="lc-bar-fill"></div></div>
+      </div>`;
+    });
+    html+=`</div></div>`;
+  });
+  document.getElementById('main').innerHTML=html;
+}
+
+/* ======================================================
+   START QUIZ
+   ====================================================== */
+function startQuiz(id,retry=false){
+  setActiveLesson(id==='all'?null:id);
+  if(id==='all'){
+    curMeta={id:'all',label:'Full Mixed Review — All Lessons',sub:'mixed'};
+    curQueue=retry?[...retryQ]:shuffle(LESSONS.flatMap(l=>l.questions.map((q,i)=>({...q,_lid:l.id,_sub:l.subject,_lt:l.title}))));
+  } else {
+    const lesson=LESSONS.find(l=>l.id===id);
+    curMeta={id,label:`${lesson.week} · ${lesson.title}`,sub:lesson.subject};
+    curQueue=retry?[...retryQ]:lesson.questions.map((q,i)=>({...q,_lid:lesson.id,_sub:lesson.subject,_lt:lesson.title}));
+  }
+  if(!retry)retryQ=[];
+  curAnswers=new Array(curQueue.length).fill(null);
+  renderQuiz();
+}
+
+/* ======================================================
+   RENDER QUIZ
+   ====================================================== */
+function renderQuiz(){
+  const total=curQueue.length;
+  const answered=curAnswers.filter(a=>a!==null&&a!=='').length;
+  const pct=total?Math.round(answered/total*100):0;
+  const sc=curMeta.sub;
+  let html=`
+    <div class="qz-header">
+      <div class="qz-header-text">
+        <h2>${curMeta.label}</h2>
+        <p>${total} question${total!==1?'s':''} · Answer all, then check</p>
+      </div>
+      <span class="qz-tag ${sc}">${sc==='mixed'?'Mixed Review':SUBJECTS[sc]?.label||sc}</span>
+    </div>
+    <div class="prog-wrap">
+      <div class="prog-info"><span id="progTxt">Answered: ${answered} / ${total}</span><span>${pct}%</span></div>
+      <div class="prog-track"><div class="prog-fill ${sc}" id="progFill" style="width:${pct}%"></div></div>
+    </div>
+  `;
+  curQueue.forEach((q,idx)=>{
+    const isAll=curMeta.id==='all';
+    html+=`<div class="qcard" id="qc${idx}">
+      <div class="qcard-meta">
+        <span class="qtype-badge">${q.t==='mc'?'◉ Multiple Choice':'✏ Identification'}</span>
+        <span class="qnum">Q${idx+1} / ${total}</span>
+        ${isAll?`<span class="qlesson">— ${q._lt}</span>`:''}
+      </div>
+      <div class="qtext">${q.q}</div>
+      ${q.t==='mc'?renderMC(q,idx):renderID(q,idx)}
+      <div class="feedback" id="fb${idx}"></div>
+    </div>`;
+  });
+  html+=`<div class="qz-actions" id="qzActions">
+    <button class="btn btn-pri" onclick="checkAll()">Check All Answers</button>
+    <button class="btn btn-sec" onclick="showHome()">← Home</button>
+  </div>`;
+  const main=document.getElementById('main');
+  main.innerHTML=html;
+  main.querySelectorAll('.opt').forEach(btn=>{
+    btn.addEventListener('click',()=>{
+      if(btn.disabled)return;
+      const idx=+btn.dataset.idx;
+      curAnswers[idx]=+btn.dataset.opt;
+      main.querySelectorAll(`.opt[data-idx="${idx}"]`).forEach(b=>b.classList.remove('sel'));
+      btn.classList.add('sel');
+      updateProg();
+    });
+  });
+  main.querySelectorAll('.id-input').forEach(inp=>{
+    inp.addEventListener('input',()=>{
+      curAnswers[+inp.dataset.idx]=inp.value.trim();
+      updateProg();
+    });
+  });
+}
+function renderMC(q,idx){
+  return `<ul class="opts">${q.opts.map((o,oi)=>`<li><button class="opt" data-idx="${idx}" data-opt="${oi}"><span class="opt-circle"></span>${o}</button></li>`).join('')}</ul>`;
+}
+function renderID(q,idx){
+  return `<div class="id-wrap">
+    <label class="id-label">Type your answer:</label>
+    <input class="id-input" type="text" data-idx="${idx}" placeholder="Your answer…" autocomplete="off" spellcheck="false">
+    <span class="id-hint">Key term accepted — capitalisation doesn't matter.</span>
+  </div>`;
+}
+function updateProg(){
+  const total=curQueue.length;
+  const answered=curAnswers.filter(a=>a!==null&&a!=='').length;
+  const pct=Math.round(answered/total*100);
+  document.getElementById('progFill').style.width=pct+'%';
+  document.getElementById('progTxt').textContent=`Answered: ${answered} / ${total}`;
+}
+
+/* ======================================================
+   CHECK ANSWERS
+   ====================================================== */
+function checkAll(){
+  let correct=0,wrong=0;
+  const wrongItems=[],reviewData=[];
+  curQueue.forEach((q,idx)=>{
+    const card=document.getElementById(`qc${idx}`);
+    const fb=document.getElementById(`fb${idx}`);
+    let ok=false,yourDisplay='',correctDisplay='';
+    if(q.t==='mc'){
+      const given=curAnswers[idx];
+      ok=given===q.a;
+      yourDisplay=given!==null?q.opts[given]:'(no answer)';
+      correctDisplay=q.opts[q.a];
+      card.querySelectorAll('.opt').forEach(btn=>{
+        const oi=+btn.dataset.opt;
+        btn.disabled=true;
+        if(oi===q.a)btn.classList.add('correct');
+        else if(oi===given)btn.classList.add('wrong');
+      });
+    } else {
+      const given=curAnswers[idx]||'';
+      ok=isIDCorrect(q,given);
+      yourDisplay=given||'(no answer)';
+      const arr=Array.isArray(q.a)?q.a:[q.a];
+      correctDisplay=arr[0];
+      const inp=card.querySelector('.id-input');
+      if(inp){inp.disabled=true;inp.classList.add(ok?'correct':'wrong');}
+    }
+    fb.classList.add('show');
+    if(ok){
+      fb.className='feedback correct show';
+      fb.innerHTML='<strong>✓ Correct!</strong>';
+      correct++;gC++;gS++;
+    } else {
+      fb.className='feedback wrong show';
+      fb.innerHTML=`<strong>✗ Wrong.</strong> Your answer: "<em>${yourDisplay}</em>" — Correct: <strong>${correctDisplay}</strong>`;
+      wrong++;gW++;gS=0;
+      wrongItems.push({...q});
+      reviewData.push({q,yourDisplay,correctDisplay});
+    }
+  });
+  updateScoreBar();
+  retryQ=wrongItems;
+  document.getElementById('qzActions').remove();
+  showResults(correct,curQueue.length,wrongItems,reviewData);
+}
+
+/* ======================================================
+   RESULTS
+   ====================================================== */
+function showResults(correct,total,wrongItems,reviewData){
+  const pct=Math.round(correct/total*100);
+  const ringClass=pct>=80?'great':pct>=50?'ok':'low';
+  const msg=pct===100?'Perfect! Every answer correct.':pct>=80?'Great job! A few to review.':pct>=50?'Halfway there — keep going!':'Don\'t stop — retry and lock it in.';
+  let html=`<div class="res-card">
+    <div class="res-ring ${ringClass}">${pct}%<div class="ring-sub">${correct}/${total}</div></div>
+    <h2>${msg}</h2>
+    <p>Round complete. Check your breakdown below.</p>
+    <div class="res-stats">
+      <div class="rstat"><div class="rn g">${correct}</div><div class="rl">Correct</div></div>
+      <div class="rstat"><div class="rn r">${wrongItems.length}</div><div class="rl">Wrong</div></div>
+      <div class="rstat"><div class="rn b">${total}</div><div class="rl">Total</div></div>
+    </div>
+  </div>`;
+  if(wrongItems.length>0){
+    html+=`<div class="retry-banner">🔁 <strong>${wrongItems.length} question${wrongItems.length>1?'s':''} to retry</strong> — they'll be re-queued until you get them right.</div>`;
+  }
+  html+=`<div class="qz-actions">
+    ${wrongItems.length>0?`<button class="btn btn-retry" onclick="doRetry()">🔁 Retry ${wrongItems.length} wrong answer${wrongItems.length>1?'s':''}</button>`:''}
+    <button class="btn btn-sec" onclick="startQuiz('${curMeta.id}')">↺ Restart</button>
+    <button class="btn btn-sec" onclick="showHome()">← Home</button>
+  </div>`;
+  if(reviewData.length>0){
+    html+=`<div class="review-section"><div class="review-hd">Questions you got wrong</div>`;
+    reviewData.forEach((rd,i)=>{
+      html+=`<div class="review-item">
+        <div class="ri-q">${i+1}. ${rd.q.q}</div>
+        <div class="ri-y">✗ Your answer: ${rd.yourDisplay}</div>
+        <div class="ri-c">✓ Correct answer: ${rd.correctDisplay}</div>
+      </div>`;
+    });
+    html+=`</div>`;
+  }
+  const main=document.getElementById('main');
+  main.insertAdjacentHTML('afterbegin',html);
+  main.scrollIntoView({behavior:'smooth',block:'start'});
+}
+function doRetry(){
+  curQueue=[...retryQ];retryQ=[];
+  curAnswers=new Array(curQueue.length).fill(null);
+  renderQuiz();
+}
+function updateScoreBar(){
+  document.getElementById('gC').textContent=gC;
+  document.getElementById('gW').textContent=gW;
+  document.getElementById('gS').textContent=gS;
+}
+
+/* ======================================================
+   INIT
+   ====================================================== */
+buildSidebar();
+showHome();
+</script>
+</body>
+</html>
